@@ -19,11 +19,15 @@ def inject_call(fn, *args, **kwargs):
     """
     assert callable(fn), "first argument must be callable"
 
+    # signature(callable)函数，可以获取签名
+    # 函数签名包含了一个函数的信息，包括：函数名、参数类型、函数所在的类和名称空间及其他信息
     st = inspect.signature(fn)
+    # 简便写法值得学习
     fn_kwargs = {
         key: kwargs[key]
         for key in st.parameters.keys() if key in kwargs
     }
+    # 把任意个参数绑定到签名中的形参上, 可以使用这个方法在真正调用函数前验证参数是否传递
     ba = st.bind(*args, **fn_kwargs)
     ba.apply_defaults()
     return fn(*ba.args, **ba.kwargs)

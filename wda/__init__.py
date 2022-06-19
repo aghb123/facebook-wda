@@ -26,11 +26,17 @@ import retry
 import six
 from deprecated import deprecated
 
-from . import requests_usbmux, xcui_element_types
-from ._proto import *
-from .exceptions import *
-from .usbmux import Usbmux
-from .utils import inject_call, limit_call_depth
+# from . import requests_usbmux, xcui_element_types
+# from ._proto import *
+# from .exceptions import *
+# from .usbmux import Usbmux
+# from .utils import inject_call, limit_call_depth
+
+from wda import requests_usbmux, xcui_element_types
+from wda._proto import *
+from wda.exceptions import *
+from wda.usbmux import Usbmux
+from wda.utils import inject_call, limit_call_depth
 
 try:
     from functools import cached_property  # Python3.8+
@@ -76,6 +82,7 @@ class Callback(str, enum.Enum):
 
 
 class AttrDict(dict):
+    # 重写类的获取属性方法
     def __getattr__(self, key):
         if isinstance(key, str) and key in self:
             return self[key]
@@ -127,14 +134,17 @@ def httpdo(url, method="GET", data=None, timeout=None) -> AttrDict:
     """
     p = urlparse(url)
     with namedlock(p.scheme + "://" + p.netloc):
+        # lock.acquire() 和 lock.release()必须成对出现，为了避免死锁，使用上下文管理器来加锁
         return _unsafe_httpdo(url, method, data, timeout)
 
-
+# @functools.lru_cache()装饰器可以利用缓存机制来保证我们的函数只被调用一次。
+# 因为我们使用了装饰器后，函数传入相同参数时的返回值会被存入缓存中，以便于下次调用直接获取，而不用函数重新再被调用一次
 @functools.lru_cache(1024)
 def _requests_session_pool_get(scheme, netloc):
     return requests_usbmux.Session()
 
 
+# 判断是否是腾讯移动品质中心TMQ
 def _is_tmq_platform() -> bool:
     return os.getenv("TMQ") == "true"
 
@@ -205,6 +215,10 @@ class Rect(list):
             "height": height
         })
 
+    # 在python中，使用print输出一个对象，如print（mini），默认情况会输出这个变量的
+    # 引用对象是由哪一个类创建的对象，以及在内存中的地址（十六进制表示）
+    # 希望使用print输出对象变量时，能够打印自定义内容，就可以利用 str 这个内置方法，注意：str 方法必须返回一个字符串，
+    # https://blog.csdn.net/sinat_38682860/article/details/109049855
     def __str__(self):
         return 'Rect(x={x}, y={y}, width={w}, height={h})'.format(
             x=self.x, y=self.y, w=self.width, h=self.height)
@@ -434,6 +448,7 @@ class BaseClient(object):
                with_session: bool = False,
                timeout: Optional[float] = None) -> AttrDict:
         """ do http request """
+        # 截掉字符串左边的空格或指定字符
         urlpath = "/" + urlpath.lstrip("/")  # urlpath always startswith /
 
         callbacks = self.__callbacks
@@ -453,6 +468,9 @@ class BaseClient(object):
                                          client=self)
 
         try:
+            # 使用属性方法session_id获取session_id
+            # 请求时带上sessionid
+            # https://blog.csdn.net/weixin_33947521/article/details/89590403
             if with_session:
                 url = urljoin(self.__wda_url, "session", self.session_id,
                               urlpath)
@@ -1811,3 +1829,12 @@ class USBClient(Client):
         _start_wda_xctest(udid, wda_bundle_id)
         if not self.wait_ready(timeout=20):
             raise RuntimeError("wda xctest launched but check failed")
+
+if __name__ == "__main__":
+    json_test = {
+        "value": 123
+    }
+    json_obj = json.dumps(json_test)
+    # print(type(json_obj))
+    json_attr = convert(eval(json_obj))
+    print(json_attr.value)

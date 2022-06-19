@@ -98,10 +98,15 @@ class UsbmuxAdapter(HTTPAdapter):
     def close(self):
         self.pools.clear()
 
-
+# session对象也是一个非常常用的对象，这个对象代表一次用户会话。一次用户会话的含义是：
+# 从客户端浏览器连接服务器开始，到客户端浏览器与服务器断开为止，这个过程就是一次会话。
+# session通常用于跟踪用户的会话信息，如判断用户是否登录系统，或者在购物车应用中，用于跟踪用户购买的商品等。
+# session范围内的属性可以在多个页面的跳转之间共享。一旦关闭浏览器，即session结束，session范围内的属性将全部丢失。
 class Session(requests.Session):
     def __init__(self, url_scheme=DEFAULT_SCHEME, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 修改requests库session默认连接数 
+        # https://lequ7.com/guan-yu-python-xiu-gai-requests-ku-session-mo-ren-lian-jie-shu.html
         self.mount(url_scheme, UsbmuxAdapter())
 
         # set NO_PROXY to skip proxy check

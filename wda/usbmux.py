@@ -22,6 +22,9 @@ class SafeStreamSocket():
         """
         Args:
             addr: can be /var/run/usbmuxd or (localhost, 27015)
+            AF-INET是我们常见 TCP/IP 的通讯方式, AF-UNIX 是用于本机线程间通讯一种IPC机制，
+            从用户角度看，所采用通讯模式相差不大，但就原理上看，相差较大
+            https://blog.csdn.net/weixin_38387929/article/details/118572831
         """
         self._sock = None
         if isinstance(addr, socket.socket):
@@ -35,7 +38,7 @@ class SafeStreamSocket():
             family = socket.AF_INET
 
         self._sock = socket.socket(family, socket.SOCK_STREAM)
-        self._sock.connect(addr)
+        self._sock.connect(addr) # 连接至服务端
 
     def recvall(self, size: int) -> bytearray:
         buf = bytearray()
@@ -78,6 +81,7 @@ class PlistSocket(SafeStreamSocket):
         body_data = plistlib.dumps(payload)
         if self._first:  # first package
             length = 16 + len(body_data)
+            # struct.pack用法 https://blog.csdn.net/yournevermore/article/details/88392592
             header = struct.pack(
                 "IIII", length, 1, reqtype,
                 self._tag)  # version: 1, request: 8(?), tag: 1(?)
